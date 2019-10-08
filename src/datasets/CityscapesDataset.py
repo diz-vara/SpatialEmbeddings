@@ -23,7 +23,8 @@ class CityscapesDataset(Dataset):
 
     def __init__(self, root_dir='./', type="train", class_id=26, size=None, transform=None):
 
-        print('Cityscapes Dataset created')
+        print('Cityscapes Dataset created from {}, type = {}, class = {}'.format(root_dir, 
+              type, class_id))
 
         # get image and instance list
         image_list = glob.glob(os.path.join(root_dir, 'leftImg8bit/{}/'.format(type), '*/*.png'))
@@ -34,10 +35,14 @@ class CityscapesDataset(Dataset):
         instance_list.sort()
         self.instance_list = instance_list
 
+
+
         self.class_id = class_id
         self.size = size
         self.real_size = len(self.image_list)
         self.transform = transform
+
+        print('Got {} images ()'.format(self.real_size, self.size))
 
     def __len__(self):
 

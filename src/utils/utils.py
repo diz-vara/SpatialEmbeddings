@@ -38,9 +38,21 @@ class AverageMeter(object):
 
 class Visualizer:
 
-    def __init__(self, keys):
+    def __init__(self, keys, save_dir=None):
         self.wins = {k:None for k in keys}
+        self.save_dir = save_dir
+        self.image_number = ''
+        self.epochdir = ''
 
+    def set_image_number(self, number):
+        self.image_number = '{:04d}-'.format(number)
+
+    def set_epoch(self, epoch):
+        if (self.save_dir is not None):
+            self.epochdir = self.save_dir + '/{:04d}/'.format(epoch)
+            if not (os.path.exists(self.epochdir)):
+                os.makedirs (self.epochdir)
+        
     def display(self, image, key):
 
         n_images = len(image) if isinstance(image, (list, tuple)) else 1
@@ -56,12 +68,21 @@ class Visualizer:
         if n_images == 1:
             ax.cla()
             ax.set_axis_off()
-            ax.imshow(self.prepare_img(image))
+            img = self.prepare_img(image)
+            ax.imshow(img)
+            if (self.save_dir is not None):
+                plt.imsave(self.epochdir + \
+                           self.image_number + key + '.png', img)
         else:
             for i in range(n_images):
+                ext = '-{:02d}'.format(i)
                 ax[i].cla()
                 ax[i].set_axis_off()
-                ax[i].imshow(self.prepare_img(image[i]))
+                img = self.prepare_img(image[i])
+                ax[i].imshow(img)
+                if (self.save_dir is not None):
+                    plt.imsave(self.epochdir + \
+                               self.image_number + key + ext + '.png', img)
     
         plt.draw()
         self.mypause(0.001)

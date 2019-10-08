@@ -3,6 +3,10 @@ Author: Davy Neven
 Licensed under the CC BY-NC 4.0 license (https://creativecommons.org/licenses/by-nc/4.0/)
 """
 import os
+
+os.environ['CITYSCAPES_DIR'] = '/media/avarfolomeev/storage/DataSets/CityScapes'
+
+
 import shutil
 import time
 
@@ -17,6 +21,8 @@ from models import get_model
 from utils.utils import AverageMeter, Cluster, Logger, Visualizer
 
 torch.backends.cudnn.benchmark = True
+
+os.environ['CITYSCAPES_DIR'] = '/media/avarfolomeev/storage/DataSets/CityScapes'
 
 args = train_config.get_args()
 
@@ -70,7 +76,8 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(
 cluster = Cluster()
 
 # Visualizer
-visualizer = Visualizer(('image', 'pred', 'sigma', 'seed'))
+visualizer = Visualizer(('image', 'predictions', 'instances', 'sigma', 'seed'),
+                        args['save_dir'])
 
 # Logger
 logger = Logger(('train', 'val', 'iou'), 'loss')
@@ -112,22 +119,23 @@ def train(epoch):
         loss.backward()
         optimizer.step()
 
-        if args['display'] and i % args['display_it'] == 0:
+        if False and args['display'] and i % args['display_it'] == 0:
             with torch.no_grad():
                 visualizer.display(im[0], 'image')
                 
                 predictions = cluster.cluster_with_gt(output[0], instances[0], n_sigma=args['loss_opts']['n_sigma'])
                 visualizer.display([predictions.cpu(), instances[0].cpu()], 'pred')
-
+    
                 sigma = output[0][2].cpu()
                 sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
                 sigma[instances[0] == 0] = 0
                 visualizer.display(sigma, 'sigma')
-
+    
                 seed = torch.sigmoid(output[0][3]).cpu()
                 visualizer.display(seed, 'seed')
-
-        loss_meter.update(loss.item())
+        
+    loss_meter.update(loss.item())
+        
 
     return loss_meter.avg
 
@@ -154,10 +162,12 @@ def val(epoch):
 
             if args['display'] and i % args['display_it'] == 0:
                 with torch.no_grad():
+                    visualizer.set_image_number(i)
                     visualizer.display(im[0], 'image')
                 
                     predictions = cluster.cluster_with_gt(output[0], instances[0], n_sigma=args['loss_opts']['n_sigma'])
-                    visualizer.display([predictions.cpu(), instances[0].cpu()], 'pred')
+                    visualizer.display(predictions.cpu(), 'predictions');
+                    visualizer.display(instances[0].cpu(), 'instances')
     
                     sigma = output[0][2].cpu()
                     sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
@@ -182,6 +192,7 @@ def save_checkpoint(state, is_best, name='checkpoint.pth'):
 for epoch in range(start_epoch, args['n_epochs']):
 
     print('Starting epoch {}'.format(epoch))
+    visualizer.set_epoch(epoch)
     scheduler.step(epoch)
 
     train_loss = train(epoch)
@@ -206,4 +217,5 @@ for epoch in range(start_epoch, args['n_epochs']):
             'optim_state_dict': optimizer.state_dict(),
             'logger_data': logger.data
         }
-        save_checkpoint(state, is_best)
+        save_checkpoint(state, is_best, 
+                        name = 'checkpoint-{:04d}.pth'.format(epoch))

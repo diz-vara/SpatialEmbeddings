@@ -16,11 +16,11 @@ args = dict(
 
     cuda=True,
     display=True,
-    display_it=5,
+    display_it=8,
 
     save=True,
-    save_dir='./exp',
-    resume_path=None, 
+    save_dir=CITYSCAPES_DIR + '/exp',
+    resume_path= CITYSCAPES_DIR + '/exp/best_iou_model.pth', 
 
     train_dataset = {
         'name': 'cityscapes',
@@ -45,7 +45,7 @@ args = dict(
                 },
             ]),
         },
-        'batch_size': 16,
+        'batch_size': 8,
         'workers': 8
     }, 
 
@@ -64,7 +64,7 @@ args = dict(
                 },
             ]),
         },
-        'batch_size': 16,
+        'batch_size': 8,
         'workers': 8
     }, 
 

@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 import torch
-import train_config
+import train_config_diz as train_config
 from criterions.my_loss import SpatialEmbLoss
 from datasets import get_dataset
 from models import get_model
@@ -94,6 +94,7 @@ if args['resume_path'] is not None and os.path.exists(args['resume_path']):
     optimizer.load_state_dict(state['optim_state_dict'])
     logger.data = state['logger_data']
 
+#%%
 def train(epoch):
 
     # define meters
@@ -138,7 +139,7 @@ def train(epoch):
         
 
     return loss_meter.avg
-
+#%%
 def val(epoch):
 
     # define meters
@@ -180,7 +181,7 @@ def val(epoch):
             loss_meter.update(loss.item())
 
     return loss_meter.avg, iou_meter.avg
-
+#%%
 def save_checkpoint(state, is_best, name='checkpoint.pth'):
     print('=> saving checkpoint')
     file_name = os.path.join(args['save_dir'], name)
@@ -189,6 +190,7 @@ def save_checkpoint(state, is_best, name='checkpoint.pth'):
         shutil.copyfile(file_name, os.path.join(
             args['save_dir'], 'best_iou_model.pth'))
 
+#%%
 for epoch in range(start_epoch, args['n_epochs']):
 
     print('Starting epoch {}'.format(epoch))

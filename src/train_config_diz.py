@@ -38,6 +38,28 @@ args = dict(
                 },
                    
                 {
+                    'name': 'RandomFlip',
+                    'opts': {
+                        'keys': ('image', 'instance','label'),
+                    }
+                },
+                {
+                    'name': 'RandomRotation',
+                    'opts': {
+                         'degrees' : 10,   
+                        'keys': ('image', 'instance','label'),
+                        'resample' : (Image.BILINEAR, Image.NEAREST, Image.NEAREST)
+                    }
+                },
+                {
+                    'name': 'RandomBrightness',
+                    'opts': {
+                         'f_min' : 0.45,
+                         'f_max' : 1.8,
+                        'keys': ('image',),
+                    }
+                },
+                {
                     'name': 'ToTensor',
                     'opts': {
                         'keys': ('image', 'instance', 'label'),
@@ -76,6 +98,31 @@ args = dict(
         'workers': 4
     }, 
 
+    test_dataset = {
+        'name': 'diz_instances',
+        'kwargs': {
+            'root_dir': DATASET_DIR,
+            'type': 'test',
+            'transform': my_transforms.get_transform([
+                {
+                    'name': 'CropToMultiple',
+                    'opts': {
+                        'keys': ('image', 'instance','label'),
+                        'step': 32,
+                    }
+                },
+                {
+                    'name': 'ToTensor',
+                    'opts': {
+                        'keys': ('image', 'instance', 'label'),
+                        'type': (torch.FloatTensor, torch.ByteTensor, torch.ByteTensor),
+                    }
+                },
+            ]),
+        },
+        'batch_size': 1,
+        'workers': 4
+    }, 
     model = {
         'name': 'branched_erfnet', 
         'kwargs': {
@@ -83,7 +130,7 @@ args = dict(
         }
     }, 
 
-    lr=5e-4,
+    lr=1e-5,
     n_epochs=200,
 
     # loss options
@@ -95,7 +142,7 @@ args = dict(
     loss_w={
         'w_inst': 1,
         'w_var': 10,
-        'w_seed': 1,
+        'w_seed': 3,
     },
 )
 

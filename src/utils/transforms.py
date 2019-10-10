@@ -49,6 +49,42 @@ class CropRandomObject:
         return sample
 
 
+class RandomBrightness:   
+    def __init__(self, keys=[], f_min = 0.5, f_max = 2):
+        self.keys = keys
+        self.min = f_min
+        self.max = f_max
+
+    def __call__(self, sample):
+
+        factor = random.uniform(self.min, self.max)
+
+        for idx, k in enumerate(self.keys):
+            #print ("k = ", k, " ; sample = ", sample)
+            if (k in sample):
+                sample[k] = F.adjust_brightness (sample[k], factor)
+        return sample
+
+
+
+class CropToMultiple:
+    def __init__ (self, keys = [], step = 32):
+        self.keys = keys
+        self.step = step
+        
+    def __call__(self, sample):    
+        for idx, k in enumerate(self.keys):
+            assert(k in sample)
+            
+            width, height = sample[k].size
+            neww = width // self.step * self.step
+            newh = height // self.step * self.step
+            
+            sample[k] = F.crop(sample[k], 0,0, newh, neww)
+
+
+        return sample
+    
 
 
 class RandomCrop(T.RandomCrop):
@@ -98,6 +134,23 @@ class RandomRotation(T.RandomRotation):
             sample[k] = F.rotate(sample[k], angle, resample,
                                  self.expand, self.center)
 
+        return sample
+
+
+
+class RandomFlip(T.RandomHorizontalFlip):
+    def __init__(self, keys=[], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.keys = keys
+
+
+    def __call__(self, sample):
+        flip = (random.uniform(0,1) > 0.5)
+        for idx, k in enumerate(self.keys):
+            assert(k in sample)
+            if (flip):
+                sample[k] = F.hflip(sample[k])
         return sample
 
 

@@ -75,7 +75,7 @@ class DizInstanceDataset(Dataset):
 
     def __getitem__(self, index):
 
-        index = random.randint(0, self.real_size-1)
+        #index = random.randint(0, self.real_size-1)
         sample = {}
 
         # load image

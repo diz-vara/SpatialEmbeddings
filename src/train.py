@@ -43,15 +43,26 @@ device = torch.device("cuda:0" if args['cuda'] else "cpu")
 train_dataset = get_dataset(
     args['train_dataset']['name'], args['train_dataset']['kwargs'])
 train_dataset_it = torch.utils.data.DataLoader(
-    train_dataset, batch_size=args['train_dataset']['batch_size'], shuffle=True, drop_last=True, num_workers=args['train_dataset']['workers'], pin_memory=True if args['cuda'] else False)
+    train_dataset, batch_size=args['train_dataset']['batch_size'], shuffle=True, 
+    drop_last=True, num_workers=args['train_dataset']['workers'], 
+    pin_memory=True if args['cuda'] else False)
 
 
 # val dataloader
 val_dataset = get_dataset(
     args['val_dataset']['name'], args['val_dataset']['kwargs'])
 val_dataset_it = torch.utils.data.DataLoader(
-    val_dataset, batch_size=args['val_dataset']['batch_size'], shuffle=True, drop_last=True, num_workers=args['train_dataset']['workers'], pin_memory=True if args['cuda'] else False)
+    val_dataset, batch_size=args['val_dataset']['batch_size'], shuffle=True, 
+    drop_last=True, num_workers=args['train_dataset']['workers'], 
+    pin_memory=True if args['cuda'] else False)
 
+
+test_dataset = get_dataset(
+    args['test_dataset']['name'], args['test_dataset']['kwargs'])
+test_dataset_it = torch.utils.data.DataLoader(
+    test_dataset, batch_size=args['test_dataset']['batch_size'], shuffle=False, 
+    drop_last=True, num_workers=args['test_dataset']['workers'], 
+    pin_memory=True if args['cuda'] else False)
 
 # set model
 model = get_model(args['model']['name'], args['model']['kwargs'])
@@ -76,7 +87,7 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(
 cluster = Cluster()
 
 # Visualizer
-visualizer = Visualizer(('image', 'predictions', 'instances', 'sigma', 'seed'),
+visualizer = Visualizer(('image', 'predictions', 'predictions_i', 'instances', 'sigma', 'seed'),
                         args['save_dir'])
 
 # Logger
@@ -161,7 +172,7 @@ def val(epoch):
                             args['loss_w'], iou=True, iou_meter=iou_meter)
             loss = loss.mean()
 
-            if args['display'] and i % args['display_it'] == 0:
+            if False and args['display'] and i % args['display_it'] == 0:
                 with torch.no_grad():
                     visualizer.set_image_number(i)
                     visualizer.display(im[0], 'image')
@@ -182,6 +193,46 @@ def val(epoch):
 
     return loss_meter.avg, iou_meter.avg
 #%%
+
+def test(epoch):
+
+    # put model into eval mode
+    model.eval()
+
+    with torch.no_grad():
+
+        for i, sample in enumerate(tqdm(test_dataset_it)):
+
+            im = sample['image']
+            instances = sample['instance'].squeeze(1)
+            class_labels = sample['label'].squeeze(1)
+
+            output = model(im)
+
+            with torch.no_grad():
+                visualizer.set_image_number(i)
+                visualizer.display(im[0], 'image')
+            
+                predictions_i = cluster.cluster_with_gt(output[0], instances[0], n_sigma=args['loss_opts']['n_sigma'])
+                visualizer.display(predictions_i.cpu(), 'predictions_i');
+                visualizer.display(instances[0].cpu(), 'instances')
+
+
+                predictions,_instances3 = cluster.cluster(output[0], n_sigma=args['loss_opts']['n_sigma'])
+                visualizer.display(predictions.cpu(), 'predictions');
+
+                sigma = output[0][2].cpu()
+                sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
+                sigma[instances[0] == 0] = 0
+                visualizer.display(sigma, 'sigma')
+
+                seed = torch.sigmoid(output[0][3]).cpu()
+                visualizer.display(seed, 'seed')
+
+
+    return 0
+
+#%%
 def save_checkpoint(state, is_best, name='checkpoint.pth'):
     print('=> saving checkpoint')
     file_name = os.path.join(args['save_dir'], name)
@@ -199,6 +250,7 @@ for epoch in range(start_epoch, args['n_epochs']):
 
     train_loss = train(epoch)
     val_loss, val_iou = val(epoch)
+    test(epoch)
 
     print('===> train loss: {:.2f}'.format(train_loss))
     print('===> val loss: {:.2f}, val iou: {:.2f}'.format(val_loss, val_iou))

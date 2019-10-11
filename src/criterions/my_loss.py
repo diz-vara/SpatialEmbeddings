@@ -32,7 +32,7 @@ class SpatialEmbLoss(nn.Module):
 
         self.register_buffer("xym", xym)
 
-    def forward(self, prediction, instances, labels, w_inst=1, w_var=10, w_seed=1, iou=False, iou_meter=None):
+    def forward(self, prediction, instances, class_labels, w_inst=1, w_var=10, w_seed=1, iou=False, iou_meter=None):
 
         batch_size, height, width = prediction.size(
             0), prediction.size(2), prediction.size(3)
@@ -55,7 +55,7 @@ class SpatialEmbLoss(nn.Module):
             obj_count = 0
 
             instance = instances[b].unsqueeze(0)  # 1 x h x w
-            label = labels[b].unsqueeze(0)  # 1 x h x w
+            label = class_labels[b].unsqueeze(0)  # 1 x h x w
 
             instance_ids = instance.unique()
             instance_ids = instance_ids[instance_ids != 0]

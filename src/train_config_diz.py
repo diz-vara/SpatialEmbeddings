@@ -19,20 +19,20 @@ args = dict(
     display_it=8,
 
     save=True,
-    save_dir=DATASET_DIR + '/exp2',
-    resume_path= DATASET_DIR + '/exp2/best_iou_model.pth', 
+    save_dir=DATASET_DIR + '/per_class',
+    resume_path= DATASET_DIR + '/per_class/best_iou_model.pth', 
 
     train_dataset = {
         'name': 'diz_instances',
         'kwargs': {
             'root_dir': DATASET_DIR,
-            'type': 'train',
+            'type': 'test',
             'size': -1,
             'transform': my_transforms.get_transform([
                 {
                     'name': 'RandomCrop',
                     'opts': {
-                        'keys': ('image', 'instance','label'),
+                        'keys': ('image', 'instance_map','class_map'),
                         'size': (704, 1024),
                     }
                 },
@@ -40,14 +40,14 @@ args = dict(
                 {
                     'name': 'RandomFlip',
                     'opts': {
-                        'keys': ('image', 'instance','label'),
+                        'keys': ('image', 'instance_map','class_map'),
                     }
                 },
                 {
                     'name': 'RandomRotation',
                     'opts': {
                          'degrees' : 10,   
-                        'keys': ('image', 'instance','label'),
+                        'keys': ('image', 'instance_map','class_map'),
                         'resample' : (Image.BILINEAR, Image.NEAREST, Image.NEAREST)
                     }
                 },
@@ -62,7 +62,7 @@ args = dict(
                 {
                     'name': 'ToTensor',
                     'opts': {
-                        'keys': ('image', 'instance', 'label'),
+                        'keys': ('image', 'instance_map','class_map'),
                         'type': (torch.FloatTensor, torch.ByteTensor, torch.ByteTensor),
                     }
                 },
@@ -76,19 +76,19 @@ args = dict(
         'name': 'diz_instances',
         'kwargs': {
             'root_dir': DATASET_DIR,
-            'type': 'val',
+            'type': 'test',
             'transform': my_transforms.get_transform([
                 {
                     'name': 'RandomCrop',
                     'opts': {
-                        'keys': ('image', 'instance','label'),
+                        'keys': ('image', 'instance_map','class_map'),
                         'size': (704, 1024),
                     }
                 },
                 {
                     'name': 'ToTensor',
                     'opts': {
-                        'keys': ('image', 'instance', 'label'),
+                        'keys': ('image', 'instance_map','class_map'),
                         'type': (torch.FloatTensor, torch.ByteTensor, torch.ByteTensor),
                     }
                 },
@@ -107,14 +107,14 @@ args = dict(
                 {
                     'name': 'CropToMultiple',
                     'opts': {
-                        'keys': ('image', 'instance','label'),
+                        'keys': ('image', 'instance_map','class_map'),
                         'step': 32,
                     }
                 },
                 {
                     'name': 'ToTensor',
                     'opts': {
-                        'keys': ('image', 'instance', 'label'),
+                        'keys': ('image', 'instance_map','class_map'),
                         'type': (torch.FloatTensor, torch.ByteTensor, torch.ByteTensor),
                     }
                 },
@@ -126,11 +126,11 @@ args = dict(
     model = {
         'name': 'branched_erfnet', 
         'kwargs': {
-            'num_classes': [4,1]
+            'num_classes': [4,43]
         }
     }, 
 
-    lr=1e-5,
+    lr=1e-4,
     n_epochs=200,
 
     # loss options

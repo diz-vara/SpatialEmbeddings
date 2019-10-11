@@ -84,10 +84,10 @@ class DizInstanceDataset(Dataset):
         sample['im_name'] = self.image_list[index]
 
         # load instances
-        instance = Image.open(self.labels_list[index])
-        instance, label = self.decode_instance(instance)
-        sample['instance'] = instance
-        sample['label'] = label
+        label = Image.open(self.labels_list[index])
+        instance_map, class_map = self.decode_instance(label)
+        sample['instance_map'] = instance_map
+        sample['class_map'] = class_map
 
         # transform
         if(self.transform is not None):
@@ -100,6 +100,6 @@ class DizInstanceDataset(Dataset):
         
         pic = np.array(pic, copy=False)
         instance_map = pic[:,:,1]
-        class_map = (instance_map != 0).astype(np.uint8)
+        class_map = pic[:,:,0] #(instance_map != 0).astype(np.uint8)
 
         return Image.fromarray(instance_map), Image.fromarray(class_map)

@@ -120,11 +120,11 @@ def train(epoch):
     for i, sample in enumerate(tqdm(train_dataset_it)):
 
         im = sample['image']
-        instances = sample['instance'].squeeze()
-        class_labels = sample['label'].squeeze()
+        instance_labels = sample['instance_map'].squeeze()
+        class_labels = sample['class_map'].squeeze()
 
         output = model(im)
-        loss = criterion(output, instances, class_labels, **args['loss_w'])
+        loss = criterion(output, instance_labels, class_labels, **args['loss_w'])
         loss = loss.mean()
 
         optimizer.zero_grad()
@@ -136,11 +136,11 @@ def train(epoch):
                 visualizer.display(im[0], 'image')
                 
                 predictions = cluster.cluster_with_gt(output[0], instances[0], n_sigma=args['loss_opts']['n_sigma'])
-                visualizer.display([predictions.cpu(), instances[0].cpu()], 'pred')
+                visualizer.display([predictions.cpu(), instance_labels[0].cpu()], 'pred')
     
                 sigma = output[0][2].cpu()
                 sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
-                sigma[instances[0] == 0] = 0
+                sigma[instance_labels[0] == 0] = 0
                 visualizer.display(sigma, 'sigma')
     
                 seed = torch.sigmoid(output[0][3]).cpu()
@@ -164,11 +164,11 @@ def val(epoch):
         for i, sample in enumerate(tqdm(val_dataset_it)):
 
             im = sample['image']
-            instances = sample['instance'].squeeze()
-            class_labels = sample['label'].squeeze()
+            instance_labels = sample['instance_map'].squeeze()
+            class_labels = sample['class_map'].squeeze()
 
             output = model(im)
-            loss = criterion(output, instances, class_labels, **
+            loss = criterion(output, instance_labels, class_labels, **
                             args['loss_w'], iou=True, iou_meter=iou_meter)
             loss = loss.mean()
 
@@ -177,9 +177,9 @@ def val(epoch):
                     visualizer.set_image_number(i)
                     visualizer.display(im[0], 'image')
                 
-                    predictions = cluster.cluster_with_gt(output[0], instances[0], n_sigma=args['loss_opts']['n_sigma'])
+                    predictions = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
                     visualizer.display(predictions.cpu(), 'predictions');
-                    visualizer.display(instances[0].cpu(), 'instances')
+                    visualizer.display(instance_labels[0].cpu(), 'instances')
     
                     sigma = output[0][2].cpu()
                     sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
@@ -204,8 +204,8 @@ def test(epoch):
         for i, sample in enumerate(tqdm(test_dataset_it)):
 
             im = sample['image']
-            instances = sample['instance'].squeeze(1)
-            class_labels = sample['label'].squeeze(1)
+            instance_labels = sample['instance_map'].squeeze(1)
+            class_labels = sample['class_map'].squeeze(1)
 
             output = model(im)
 
@@ -213,9 +213,9 @@ def test(epoch):
                 visualizer.set_image_number(i)
                 visualizer.display(im[0], 'image')
             
-                predictions_i = cluster.cluster_with_gt(output[0], instances[0], n_sigma=args['loss_opts']['n_sigma'])
-                visualizer.display(predictions_i.cpu(), 'predictions_i');
-                visualizer.display(instances[0].cpu(), 'instances')
+                #predictions_i = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
+                #visualizer.display(predictions_i.cpu(), 'predictions_i');
+                #visualizer.display(instance_labels[0].cpu(), 'instances')
 
 
                 predictions,_instances3 = cluster.cluster(output[0], n_sigma=args['loss_opts']['n_sigma'])
@@ -223,7 +223,7 @@ def test(epoch):
 
                 sigma = output[0][2].cpu()
                 sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
-                sigma[instances[0] == 0] = 0
+                sigma[instance_labels[0] == 0] = 0
                 visualizer.display(sigma, 'sigma')
 
                 seed = torch.sigmoid(output[0][3]).cpu()

@@ -70,7 +70,7 @@ model.init_output(args['loss_opts']['n_sigma'])
 model = torch.nn.DataParallel(model).to(device)
 
 # set criterion
-criterion = SpatialEmbLoss(**args['loss_opts'])
+criterion = SpatialEmbLoss(train_dataset.ontology, **args['loss_opts'])
 criterion = torch.nn.DataParallel(criterion).to(device)
 
 # set optimizer
@@ -87,7 +87,8 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(
 cluster = Cluster()
 
 # Visualizer
-visualizer = Visualizer(('image', 'predictions', 'predictions_i', 'instances', 'sigma', 'seed'),
+visualizer = Visualizer(('image', 'predictions', 'predictions_i', 'instances', 
+                         'sigma', 'seed', 'classes'),
                         args['save_dir'])
 
 # Logger
@@ -124,6 +125,7 @@ def train(epoch):
         class_labels = sample['class_map'].squeeze()
 
         output = model(im)
+        #print(output.shape)
         loss = criterion(output, instance_labels, class_labels, **args['loss_w'])
         loss = loss.mean()
 
@@ -213,9 +215,10 @@ def test(epoch):
                 visualizer.set_image_number(i)
                 visualizer.display(im[0], 'image')
             
-                #predictions_i = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
-                #visualizer.display(predictions_i.cpu(), 'predictions_i');
-                #visualizer.display(instance_labels[0].cpu(), 'instances')
+                predictions_i = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
+                visualizer.display(class_labels.cpu(),'classes')
+                visualizer.display(predictions_i.cpu(), 'predictions_i');
+                visualizer.display(instance_labels[0].cpu(), 'instances')
 
 
                 predictions,_instances3 = cluster.cluster(output[0], n_sigma=args['loss_opts']['n_sigma'])

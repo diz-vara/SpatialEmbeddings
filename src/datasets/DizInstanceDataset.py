@@ -41,7 +41,11 @@ class DizInstanceDataset(Dataset):
         print('Instances Dataset created from {}, type = {}, {} classes, {} with instances'.format(root_dir, 
               type, len(self.class_ids), sum(self.has_objects)))
         inst_classes = [(ont.id,ont.name) for ont in self.ontology if ont.has_objects is not 0]
-        self.class_ids = [cls[0] for cls in inst_classes]
+
+        #k
+        self.obj_class_ids = [cls[0] for cls in inst_classes]
+        self.num_obj_classes = len(self.obj_class_ids)
+
         for c in inst_classes:
             print(' [{:2d}] - "{}"'.format(c[0], c[1]))
 

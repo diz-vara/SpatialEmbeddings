@@ -10,7 +10,7 @@ from PIL import Image
 import torch
 from utils import transforms as my_transforms
 
-DATASET_DIR='/home/avarfolomeev/Data/Instance'
+DATASET_DIR='/media/nvidia/ssd/Segmentation/Instance'
 
 args = dict(
 
@@ -19,14 +19,14 @@ args = dict(
     display_it=8,
 
     save=True,
-    save_dir=DATASET_DIR + '/per_class',
-    resume_path= DATASET_DIR + '/per_class/best_iou_model.pth', 
+    save_dir=DATASET_DIR + '/per_obj_class',
+    resume_path= DATASET_DIR + '/per_obj_class/checkpoint.pth', 
 
     train_dataset = {
         'name': 'diz_instances',
         'kwargs': {
             'root_dir': DATASET_DIR,
-            'type': 'test',
+            'type': 'train',
             'size': -1,
             'transform': my_transforms.get_transform([
                 {
@@ -76,7 +76,7 @@ args = dict(
         'name': 'diz_instances',
         'kwargs': {
             'root_dir': DATASET_DIR,
-            'type': 'test',
+            'type': 'val',
             'transform': my_transforms.get_transform([
                 {
                     'name': 'RandomCrop',
@@ -126,7 +126,7 @@ args = dict(
     model = {
         'name': 'branched_erfnet', 
         'kwargs': {
-            'num_classes': [4,43]
+            'num_classes': [4,9]
         }
     }, 
 

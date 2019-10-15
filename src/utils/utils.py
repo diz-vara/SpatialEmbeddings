@@ -161,7 +161,9 @@ class Cluster:
         
         spatial_emb = torch.tanh(prediction[0:2]) + xym_s  # 2 x h x w
         sigma = prediction[2:2+n_sigma]  # n_sigma x h x w
-        seed_map = torch.sigmoid(prediction[2+n_sigma:2+n_sigma + 1])  # 1 x h x w
+        seed_map = torch.sigmoid(prediction[2+n_sigma:]) #2+n_sigma + 1 # 1 x h x w
+
+        seed_map = seed_map.sum(0)
        
         instance_map = torch.zeros(height, width).byte()
         instances = []
@@ -194,6 +196,8 @@ class Cluster:
 
                 if proposal.sum() > 128:
                     if unclustered[proposal].sum().float()/proposal.sum().float() > 0.5:
+                        if (count > 255):
+                            count = 255
                         instance_map_masked[proposal.squeeze()] = count
                         instance_mask = torch.zeros(height, width).byte()
                         instance_mask[mask.squeeze().cpu()] = proposal.cpu()

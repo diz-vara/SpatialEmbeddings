@@ -65,12 +65,17 @@ test_dataset_it = torch.utils.data.DataLoader(
     pin_memory=True if args['cuda'] else False)
 
 # set model
+#set nr of classes to the number of object classes in dataset
+#args['model']['kwargs']['num_classes'][1] = train_dataset['num_obj_classes']
+#print (args['model']['kwargs'])
+
+
 model = get_model(args['model']['name'], args['model']['kwargs'])
 model.init_output(args['loss_opts']['n_sigma'])
 model = torch.nn.DataParallel(model).to(device)
 
 # set criterion
-criterion = SpatialEmbLoss(train_dataset.ontology, **args['loss_opts'])
+criterion = SpatialEmbLoss(train_dataset, **args['loss_opts'])
 criterion = torch.nn.DataParallel(criterion).to(device)
 
 # set optimizer
@@ -88,7 +93,7 @@ cluster = Cluster()
 
 # Visualizer
 visualizer = Visualizer(('image', 'predictions', 'predictions_i', 'instances', 
-                         'sigma', 'seed', 'classes'),
+                         'sigmaX', 'sigmaY', 'seed', 'classes'),
                         args['save_dir'])
 
 # Logger
@@ -217,19 +222,24 @@ def test(epoch):
             
                 predictions_i = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
                 visualizer.display(class_labels.cpu(),'classes')
-                visualizer.display(predictions_i.cpu(), 'predictions_i');
+                #visualizer.display(predictions_i.cpu(), 'predictions_i');
                 visualizer.display(instance_labels[0].cpu(), 'instances')
 
 
                 predictions,_instances3 = cluster.cluster(output[0], n_sigma=args['loss_opts']['n_sigma'])
                 visualizer.display(predictions.cpu(), 'predictions');
 
-                sigma = output[0][2].cpu()
-                sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
-                sigma[instance_labels[0] == 0] = 0
-                visualizer.display(sigma, 'sigma')
+                sigmaX = output[0][2].cpu()
+                sigmaX = (sigmaX - sigmaX.min())/(sigmaX.max() - sigmaX.min())
+                #sigmaX[instance_labels[0] == 0] = 0
+                visualizer.display(sigmaX, 'sigmaX')
 
-                seed = torch.sigmoid(output[0][3]).cpu()
+                sigmaY = output[0][3].cpu()
+                sigmaY = (sigmaY - sigmaY.min())/(sigmaY.max() - sigmaY.min())
+                #sigmaX[instance_labels[0] == 0] = 0
+                visualizer.display(sigmaY, 'sigmaY')
+
+                seed = torch.sigmoid(output[0][4:]).sum(0).cpu()
                 visualizer.display(seed, 'seed')
 
 
@@ -240,6 +250,9 @@ def save_checkpoint(state, is_best, name='checkpoint.pth'):
     print('=> saving checkpoint')
     file_name = os.path.join(args['save_dir'], name)
     torch.save(state, file_name)
+    shutil.copyfile(file_name, os.path.join(
+        args['save_dir'], 'checkpoint.pth'))
+
     if is_best:
         shutil.copyfile(file_name, os.path.join(
             args['save_dir'], 'best_iou_model.pth'))
@@ -253,7 +266,6 @@ for epoch in range(start_epoch, args['n_epochs']):
 
     train_loss = train(epoch)
     val_loss, val_iou = val(epoch)
-    test(epoch)
 
     print('===> train loss: {:.2f}'.format(train_loss))
     print('===> val loss: {:.2f}, val iou: {:.2f}'.format(val_loss, val_iou))
@@ -276,3 +288,5 @@ for epoch in range(start_epoch, args['n_epochs']):
         }
         save_checkpoint(state, is_best, 
                         name = 'checkpoint-{:04d}.pth'.format(epoch))
+
+    test(epoch)

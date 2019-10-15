@@ -13,18 +13,14 @@ from criterions.lovasz_losses import lovasz_hinge
 
 class SpatialEmbLoss(nn.Module):
 
-    def __init__(self, ontology, to_center=True, n_sigma=1, foreground_weight=1,):
+    def __init__(self, dataset, to_center=True, n_sigma=1, foreground_weight=1,):
         super().__init__()
 
         print('Created spatial emb loss function with: to_center: {}, n_sigma: {}, foreground_weight: {}'.format(
             to_center, n_sigma, foreground_weight))
 
-        self.ontology = ontology
-        self.num_classes = len(ontology)
-        #self.class_ids = [ont.id for ont in self.ontology]
-        #self.has_objects = [ont.has_objects for ont in self.ontology]
-        self.obj_class_ids = torch.tensor([ont.id for ont in self.ontology if ont.has_objects]).byte().cuda()
-        #self.obj_class_ids = torch.tensor([28]).byte().cuda()
+        self.num_obj_classes = dataset.num_obj_classes
+        self.obj_class_ids = dataset.obj_class_ids
         
         self.to_center = to_center
         self.n_sigma = n_sigma
@@ -72,16 +68,17 @@ class SpatialEmbLoss(nn.Module):
             instance_ids = instance_ids[instance_ids != 0]
 
 
-            for class_id in self.obj_class_ids:
+            for cls in range (self.num_obj_classes):
+                class_id = self.obj_class_ids[cls] #.cuda(label.device.index)
                 fg_mask = (class_id == label)
                 
-                if ( fg_mask.sum() > 0):
+                if ( fg_mask.sum() == 0):
                     continue  #no objects of this class
 
-                cid = class_id.detach()
-                #print (all_seeds_map.shape, cid)
-                seed_map = all_seeds_map.narrow(0,0,1)
-                #print(seed_map.shape)
+                #cid = class_id.detach()
+                #print (all_seeds_map.shape, cls)
+                seed_map = all_seeds_map[cls].unsqueeze(0) #.narrow (0,0,1)
+                #print(seed_map.shape, fg_mask.shape)
                 # regress bg to zero
                 bg_mask = (fg_mask == 0)
                 if bg_mask.sum() > 0:

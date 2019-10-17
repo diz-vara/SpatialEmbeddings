@@ -22,6 +22,7 @@ from utils.utils import AverageMeter, Cluster, Logger, Visualizer
 
 torch.backends.cudnn.benchmark = True
 
+#%%
 os.environ['CITYSCAPES_DIR'] = '/media/avarfolomeev/storage/DataSets/CityScapes'
 
 args = train_config.get_args()
@@ -66,9 +67,10 @@ test_dataset_it = torch.utils.data.DataLoader(
 
 # set model
 #set nr of classes to the number of object classes in dataset
-#args['model']['kwargs']['num_classes'][1] = train_dataset['num_obj_classes']
-#print (args['model']['kwargs'])
-
+args['model']['kwargs']['num_classes'][1] = train_dataset.num_obj_classes \
+                                            + train_dataset.num_classes
+print (args['model']['kwargs'])
+#%%
 
 model = get_model(args['model']['name'], args['model']['kwargs'])
 model.init_output(args['loss_opts']['n_sigma'])
@@ -93,11 +95,12 @@ cluster = Cluster()
 
 # Visualizer
 visualizer = Visualizer(('image', 'predictions', 'predictions_i', 'instances', 
-                         'sigmaX', 'sigmaY', 'seed', 'classes'),
+                         'sigmaX', 'sigmaY', 'seed', 'classes', 'combined'),
                         args['save_dir'])
 
 # Logger
 logger = Logger(('train', 'val', 'iou'), 'loss')
+#%%
 
 # resume
 start_epoch = 0
@@ -220,28 +223,36 @@ def test(epoch):
                 visualizer.set_image_number(i)
                 visualizer.display(im[0], 'image')
             
-                predictions_i = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
-                visualizer.display(class_labels.cpu(),'classes')
+                #predictions_i = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
                 #visualizer.display(predictions_i.cpu(), 'predictions_i');
-                visualizer.display(instance_labels[0].cpu(), 'instances')
+                #visualizer.display(instance_labels[0].cpu(), 'instances')
 
+                visualizer.display(class_labels.cpu(), 'instances')
 
-                predictions,_instances3 = cluster.cluster(output[0], n_sigma=args['loss_opts']['n_sigma'])
-                visualizer.display(predictions.cpu(), 'predictions');
+                class_map = output[0, 13:56]
+                #print(class_map[:,400,400])
+                class_map = torch.argmax(class_map,0)
+                visualizer.display(class_map.cpu(),'classes')
 
-                sigmaX = output[0][2].cpu()
+                sigmaX = output[0][2].detach().cpu()
                 sigmaX = (sigmaX - sigmaX.min())/(sigmaX.max() - sigmaX.min())
                 #sigmaX[instance_labels[0] == 0] = 0
-                visualizer.display(sigmaX, 'sigmaX')
+                #visualizer.display(sigmaX, 'sigmaX')
 
-                sigmaY = output[0][3].cpu()
+                sigmaY = output[0][3].detach().cpu()
                 sigmaY = (sigmaY - sigmaY.min())/(sigmaY.max() - sigmaY.min())
                 #sigmaX[instance_labels[0] == 0] = 0
-                visualizer.display(sigmaY, 'sigmaY')
+                #visualizer.display(sigmaY, 'sigmaY')
 
-                seed = torch.sigmoid(output[0][4:]).sum(0).cpu()
+                seed = torch.sigmoid(output[0][4:13]).sum(0).detach().cpu()
                 visualizer.display(seed, 'seed')
+                
+                seed = (seed - seed.min())/(seed.max() - seed.min())
+                cmb = torch.stack([seed, sigmaX, sigmaY])
+                visualizer.display(cmb, 'combined')
 
+                predictions,_ = cluster.cluster(output[0][:13], n_sigma=args['loss_opts']['n_sigma'])
+                visualizer.display(predictions.cpu(), 'predictions');
 
     return 0
 

@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from criterions.lovasz_losses import lovasz_hinge
+from criterions.lovasz_losses import lovasz_softmax
 
 
 class SpatialEmbLoss(nn.Module):
@@ -19,6 +20,7 @@ class SpatialEmbLoss(nn.Module):
         print('Created spatial emb loss function with: to_center: {}, n_sigma: {}, foreground_weight: {}'.format(
             to_center, n_sigma, foreground_weight))
 
+        self.num_classes = dataset.num_classes
         self.num_obj_classes = dataset.num_obj_classes
         self.obj_class_ids = dataset.obj_class_ids
         
@@ -44,15 +46,33 @@ class SpatialEmbLoss(nn.Module):
 
         xym_s = self.xym[:, 0:height, 0:width].contiguous()  # 2 x h x w
 
+
+        sigma_pos = 2
+        seeds_pos = sigma_pos + self.n_sigma
+        class_pos = seeds_pos + self.num_obj_classes
+        end_pos = class_pos + self.num_classes
+
+
         loss = 0
 
+        class_map = prediction[:,class_pos:end_pos]
+        #_max = class_map.max()+1e-50
+        #_min = class_map.min()-1e-50
+        #class_map = (class_map - _min ) / (_max-_min)
+        class_map = torch.softmax(class_map,1)
+        
+        class_loss = lovasz_softmax(class_map, class_labels,
+                                    only_present=True, per_image=False, 
+                                    ignore=0)
+        #print ("  ", class_loss, end = '\r')
+        
         for b in range(0, batch_size):
 
-            spatial_emb = torch.tanh(prediction[b, 0:2]) + xym_s  # 2 x h x w
-            sigma = prediction[b, 2:2+self.n_sigma]  # n_sigma x h x w
-            all_seeds_map = torch.sigmoid(
-                prediction[b, 2+self.n_sigma:])  # 1 x h x w
             
+            spatial_emb = torch.tanh(prediction[b, 0:sigma_pos]) + xym_s  # 2 x h x w
+            sigma = prediction[b, sigma_pos:seeds_pos]  # n_sigma x h x w
+            all_seeds_map = torch.sigmoid(
+                prediction[b, seeds_pos:class_pos])  # num_obj_classes x h x w
             #print (all_seeds_map.shape)
 
             # loss accumulators
@@ -66,6 +86,8 @@ class SpatialEmbLoss(nn.Module):
 
             instance_ids = instance.unique()
             instance_ids = instance_ids[instance_ids != 0]
+
+
 
 
             for cls in range (self.num_obj_classes):
@@ -137,9 +159,11 @@ class SpatialEmbLoss(nn.Module):
 
             seed_loss = seed_loss / (height * width)
 
-            loss += w_inst * instance_loss + w_var * var_loss + w_seed * seed_loss
+            loss += w_inst * instance_loss + w_var * var_loss \
+                    + w_seed * seed_loss + class_loss
 
         loss = loss / (b+1)
+        loss = loss + class_loss*3
 
         return loss + prediction.sum()*0
 

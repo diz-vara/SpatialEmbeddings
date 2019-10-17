@@ -34,18 +34,17 @@ class DizInstanceDataset(Dataset):
 
         self.ontology = read_ontology(root_dir + '/Ontology.csv')[0]
         self.class_ids = [ont.id for ont in self.ontology]
-        self.class_names = [ont.name for ont in self.ontology]
-        self.class_colors = [ont.color for ont in self.ontology]
-        self.has_objects = [ont.has_objects for ont in self.ontology]
+        #self.class_colors = [ont.color for ont in self.ontology]
         
-        print('Instances Dataset created from {}, type = {}, {} classes, {} with instances'.format(root_dir, 
-              type, len(self.class_ids), sum(self.has_objects)))
-        inst_classes = [(ont.id,ont.name) for ont in self.ontology if ont.has_objects is not 0]
 
         #k
+        inst_classes = [(ont.id,ont.name) for ont in self.ontology if ont.has_objects is not 0]
         self.obj_class_ids = [cls[0] for cls in inst_classes]
         self.num_obj_classes = len(self.obj_class_ids)
+        self.num_classes = len(self.class_ids)
 
+        print('Instances Dataset created from {}, type = {}, {} classes, {} with instances'.format(root_dir, 
+              type, len(self.class_ids), len(self.obj_class_ids)))
         for c in inst_classes:
             print(' [{:2d}] - "{}"'.format(c[0], c[1]))
 

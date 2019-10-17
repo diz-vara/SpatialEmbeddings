@@ -19,8 +19,8 @@ args = dict(
     display_it=8,
 
     save=True,
-    save_dir=DATASET_DIR + '/per_obj_class',
-    resume_path= DATASET_DIR + '/per_obj_class/checkpoint.pth', 
+    save_dir=DATASET_DIR + '/per_obj_class_nc02',
+    resume_path= DATASET_DIR + '/per_obj_class_nc02/checkpoint.pth', 
 
     train_dataset = {
         'name': 'diz_instances',
@@ -135,7 +135,7 @@ args = dict(
 
     # loss options
     loss_opts={
-        'to_center': True,
+        'to_center': False,
         'n_sigma': 2,
         'foreground_weight': 10,
     },

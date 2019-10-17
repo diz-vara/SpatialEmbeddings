@@ -66,7 +66,7 @@ test_dataset_it = torch.utils.data.DataLoader(
 
 # set model
 #set nr of classes to the number of object classes in dataset
-#args['model']['kwargs']['num_classes'][1] = train_dataset['num_obj_classes']
+args['model']['kwargs']['num_classes'][1] = train_dataset.num_obj_classes
 #print (args['model']['kwargs'])
 
 
@@ -93,7 +93,7 @@ cluster = Cluster()
 
 # Visualizer
 visualizer = Visualizer(('image', 'predictions', 'predictions_i', 'instances', 
-                         'sigmaX', 'sigmaY', 'seed', 'classes'),
+                         'sigmaX', 'sigmaY', 'seed', 'classes', 'combined'),
                         args['save_dir'])
 
 # Logger
@@ -138,20 +138,6 @@ def train(epoch):
         loss.backward()
         optimizer.step()
 
-        if False and args['display'] and i % args['display_it'] == 0:
-            with torch.no_grad():
-                visualizer.display(im[0], 'image')
-                
-                predictions = cluster.cluster_with_gt(output[0], instances[0], n_sigma=args['loss_opts']['n_sigma'])
-                visualizer.display([predictions.cpu(), instance_labels[0].cpu()], 'pred')
-    
-                sigma = output[0][2].cpu()
-                sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
-                sigma[instance_labels[0] == 0] = 0
-                visualizer.display(sigma, 'sigma')
-    
-                seed = torch.sigmoid(output[0][3]).cpu()
-                visualizer.display(seed, 'seed')
         
     loss_meter.update(loss.item())
         
@@ -179,23 +165,6 @@ def val(epoch):
                             args['loss_w'], iou=True, iou_meter=iou_meter)
             loss = loss.mean()
 
-            if False and args['display'] and i % args['display_it'] == 0:
-                with torch.no_grad():
-                    visualizer.set_image_number(i)
-                    visualizer.display(im[0], 'image')
-                
-                    predictions = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
-                    visualizer.display(predictions.cpu(), 'predictions');
-                    visualizer.display(instance_labels[0].cpu(), 'instances')
-    
-                    sigma = output[0][2].cpu()
-                    sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
-                    sigma[instances[0] == 0] = 0
-                    visualizer.display(sigma, 'sigma')
-    
-                    seed = torch.sigmoid(output[0][3]).cpu()
-                    visualizer.display(seed, 'seed')
-
             loss_meter.update(loss.item())
 
     return loss_meter.avg, iou_meter.avg
@@ -220,14 +189,10 @@ def test(epoch):
                 visualizer.set_image_number(i)
                 visualizer.display(im[0], 'image')
             
-                predictions_i = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
+                #predictions_i = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
                 visualizer.display(class_labels.cpu(),'classes')
                 #visualizer.display(predictions_i.cpu(), 'predictions_i');
                 visualizer.display(instance_labels[0].cpu(), 'instances')
-
-
-                predictions,_instances3 = cluster.cluster(output[0], n_sigma=args['loss_opts']['n_sigma'])
-                visualizer.display(predictions.cpu(), 'predictions');
 
                 sigmaX = output[0][2].cpu()
                 sigmaX = (sigmaX - sigmaX.min())/(sigmaX.max() - sigmaX.min())
@@ -242,6 +207,13 @@ def test(epoch):
                 seed = torch.sigmoid(output[0][4:]).sum(0).cpu()
                 visualizer.display(seed, 'seed')
 
+                seed_n = (seed - seed.min())/(seed.max() - seed.min())
+
+                cmb = torch.stack([seed_n, sigmaX, sigmaY])
+                visualizer.display(cmb, 'combined')
+
+                predictions,_instances3 = cluster.cluster(output[0], n_sigma=args['loss_opts']['n_sigma'])
+                visualizer.display(predictions.cpu(), 'predictions');
 
     return 0
 

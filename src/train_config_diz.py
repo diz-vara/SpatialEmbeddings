@@ -10,8 +10,8 @@ from PIL import Image
 import torch
 from utils import transforms as my_transforms
 
-#DATASET_DIR='/media/nvidia/ssd/Segmentation/Instance'
-DATASET_DIR='/home/avarfolomeev/Data/Instance'
+DATASET_DIR='/media/nvidia/ssd/Segmentation/Instance'
+#DATASET_DIR='/home/avarfolomeev/Data/Instance'
 
 args = dict(
 
@@ -20,8 +20,8 @@ args = dict(
     display_it=8,
 
     save=True,
-    save_dir=DATASET_DIR + '/per_obj_class1',
-    resume_path= DATASET_DIR + '/per_obj_class1/checkpoint.pth', 
+    save_dir=DATASET_DIR + '/per_obj_class2',
+    resume_path= DATASET_DIR + '/per_obj_class2/checkpoint.pth', 
 
     train_dataset = {
         'name': 'diz_instances',
@@ -131,8 +131,8 @@ args = dict(
         }
     }, 
 
-    lr=1e-4,
-    n_epochs=200,
+    lr=3e-5,
+    n_epochs=500,
 
     # loss options
     loss_opts={
@@ -142,7 +142,7 @@ args = dict(
     },
     loss_w={
         'w_inst': 1,
-        'w_var': 10,
+        'w_var': 5,
         'w_seed': 5,
     },
 )

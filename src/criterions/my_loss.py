@@ -61,10 +61,11 @@ class SpatialEmbLoss(nn.Module):
         #class_map = (class_map - _min ) / (_max-_min)
         class_map = torch.softmax(class_map,1)
         
-        class_loss = lovasz_softmax(class_map, class_labels,
-                                    only_present=True, per_image=False, 
-                                    ignore=0)
-        #print ("  ", class_loss, end = '\r')
+        #class_loss = lovasz_softmax(class_map, class_labels,
+        #                            only_present=True, per_image=False, 
+        #                            ignore=0)
+        class_loss = dice_loss(class_map, class_labels)
+        #print ("class_loss=  ", class_loss.detach().cpu().numpy())
         
         for b in range(0, batch_size):
 
@@ -160,13 +161,36 @@ class SpatialEmbLoss(nn.Module):
             seed_loss = seed_loss / (height * width)
 
             loss += w_inst * instance_loss + w_var * var_loss \
-                    + w_seed * seed_loss + class_loss
+                    + w_seed * seed_loss
 
         loss = loss / (b+1)
-        loss = loss + class_loss*3
+        loss = loss + class_loss*10
 
         return loss + prediction.sum()*0
 
+def dice_loss(pred,target):
+    # pred - after softmax ! (B,C,H,W)
+    # target must be (B,1,H,W)
+    B,C,H,W = pred.shape
+
+    if (target.ndimension() < 4):
+        target = target.unsqueeze(1)
+
+
+
+    oh_target = torch.FloatTensor(B,C,H,W).cuda().zero_()
+    oh_target = oh_target.scatter_(1,target.data.long(), 1)
+
+    dims = (0,2)
+
+    eps = 1e-17
+    smooth = 10.
+
+    numerator = 2. * torch.sum(pred * oh_target, dims)
+    denominator = torch.sum(pred + oh_target, dims)
+    dice_score = (numerator + eps) / (denominator + smooth)
+    loss = 1. - dice_score.mean()
+    return loss
 
 def calculate_iou(pred, label):
     intersection = ((label == 1) & (pred == 1)).sum()

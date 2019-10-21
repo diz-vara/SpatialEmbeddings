@@ -71,8 +71,12 @@ class Visualizer:
             img = self.prepare_img(image)
             ax.imshow(img)
             if (self.save_dir is not None):
-                plt.imsave(self.epochdir + \
-                           self.image_number + key + '.png', img)
+                #plt.imsave(self.epochdir + \
+                #           self.image_number + key + '.png', img)
+                _name = self.image_number + key + '.png'
+                #print(_name, img.shape, img.dtype)
+                _img = Image.fromarray(img)
+                _img.save(self.epochdir + _name)
         else:
             for i in range(n_images):
                 ext = '-{:02d}'.format(i)
@@ -81,8 +85,11 @@ class Visualizer:
                 img = self.prepare_img(image[i])
                 ax[i].imshow(img)
                 if (self.save_dir is not None):
-                    plt.imsave(self.epochdir + \
-                               self.image_number + key + ext + '.png', img)
+                    _name = self.image_number + key + ext + '.png'
+                    _img = Image.fromarray(img)
+                    _img.save(self.epochdir + _name)
+                    #plt.imsave(self.epochdir + \
+                    #           self.image_number + key + ext + '.png', img)
     
         plt.draw()
         self.mypause(0.001)
@@ -97,6 +104,10 @@ class Visualizer:
             image = image.numpy()
 
         if isinstance(image, np.ndarray):
+            if (image.dtype == 'float32'):
+                image = (image * 255)
+            if (image.dtype != 'uint8'):
+                image = image.astype(np.uint8)
             if image.ndim == 3 and image.shape[0] in {1, 3}:
                 image = image.transpose(1, 2, 0)
             return image

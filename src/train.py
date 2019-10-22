@@ -251,8 +251,8 @@ def test(epoch):
                 cmb = torch.stack([seed, sigmaX, sigmaY])
                 visualizer.display(cmb, 'combined')
 
-                predictions,_ = cluster.cluster(output[0][:13], n_sigma=args['loss_opts']['n_sigma'])
-                visualizer.display(predictions.cpu(), 'predictions');
+                #predictions,_ = cluster.cluster(output[0][:13], n_sigma=args['loss_opts']['n_sigma'])
+                #visualizer.display(predictions.cpu(), 'predictions');
 
     return 0
 

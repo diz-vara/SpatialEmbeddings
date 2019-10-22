@@ -20,8 +20,8 @@ args = dict(
     display_it=8,
 
     save=True,
-    save_dir=DATASET_DIR + '/per_obj_class2',
-    resume_path= DATASET_DIR + '/per_obj_class2/checkpoint.pth', 
+    save_dir=DATASET_DIR + '/class_BiSeNet',
+    resume_path= DATASET_DIR + '/class_BiSeNet/checkpoint.pth', 
 
     train_dataset = {
         'name': 'diz_instances',

@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 
-from models.resnet import resnet18 as Resnet #resnet18, resnet50
+from models.resnet import resnet50 as Resnet #resnet18, resnet50
 from models.modules.bn import InPlaceABNSync as BatchNorm2d
 
 
@@ -94,12 +94,18 @@ class AttentionRefinementModule(nn.Module):
 class ContextPath(nn.Module):
     def __init__(self, *args, **kwargs):
         super(ContextPath, self).__init__()
-        self.resnet = Resnet()
-        self.arm16 = AttentionRefinementModule(256, 128)
-        self.arm32 = AttentionRefinementModule(512, 128)
+        self.resnet = Resnet(pretrained=True)
+        
+        #test output to get sizes
+        f = self.resnet.forward(torch.zeros((1,3,64,64)))
+        arm16_depth = f[1].shape[1]
+        arm32_depth = f[2].shape[1]
+        
+        self.arm16 = AttentionRefinementModule(arm16_depth, 128)
+        self.arm32 = AttentionRefinementModule(arm32_depth, 128)
         self.conv_head32 = ConvBNReLU(128, 128, ks=3, stride=1, padding=1)
         self.conv_head16 = ConvBNReLU(128, 128, ks=3, stride=1, padding=1)
-        self.conv_avg = ConvBNReLU(512, 128, ks=1, stride=1, padding=0)
+        self.conv_avg = ConvBNReLU(arm32_depth, 128, ks=1, stride=1, padding=0)
 
         self.init_weight()
 
@@ -116,6 +122,7 @@ class ContextPath(nn.Module):
 
         feat32_arm = self.arm32(feat32)
         feat32_sum = feat32_arm + avg_up
+        
         feat32_up = F.interpolate(feat32_sum, (H16, W16), mode='nearest')
         feat32_up = self.conv_head32(feat32_up)
 

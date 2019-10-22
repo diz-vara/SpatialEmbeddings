@@ -140,21 +140,6 @@ def train(epoch):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
-        if False and args['display'] and i % args['display_it'] == 0:
-            with torch.no_grad():
-                visualizer.display(im[0], 'image')
-                
-                predictions = cluster.cluster_with_gt(output[0], instances[0], n_sigma=args['loss_opts']['n_sigma'])
-                visualizer.display([predictions.cpu(), instance_labels[0].cpu()], 'pred')
-    
-                sigma = output[0][2].cpu()
-                sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
-                sigma[instance_labels[0] == 0] = 0
-                visualizer.display(sigma, 'sigma')
-    
-                seed = torch.sigmoid(output[0][3]).cpu()
-                visualizer.display(seed, 'seed')
         
     loss_meter.update(loss.item())
         
@@ -181,23 +166,6 @@ def val(epoch):
             loss = criterion(output, instance_labels, class_labels, **
                             args['loss_w'], iou=True, iou_meter=iou_meter)
             loss = loss.mean()
-
-            if False and args['display'] and i % args['display_it'] == 0:
-                with torch.no_grad():
-                    visualizer.set_image_number(i)
-                    visualizer.display(im[0], 'image')
-                
-                    predictions = cluster.cluster_with_gt(output[0], instance_labels[0], n_sigma=args['loss_opts']['n_sigma'])
-                    visualizer.display(predictions.cpu(), 'predictions');
-                    visualizer.display(instance_labels[0].cpu(), 'instances')
-    
-                    sigma = output[0][2].cpu()
-                    sigma = (sigma - sigma.min())/(sigma.max() - sigma.min())
-                    sigma[instances[0] == 0] = 0
-                    visualizer.display(sigma, 'sigma')
-    
-                    seed = torch.sigmoid(output[0][3]).cpu()
-                    visualizer.display(seed, 'seed')
 
             loss_meter.update(loss.item())
 

@@ -97,7 +97,9 @@ class InPlaceABN(autograd.Function):
 
             # Update running stats
             running_mean.mul_((1 - ctx.momentum)).add_(ctx.momentum * mean)
-            running_var.mul_((1 - ctx.momentum)).add_(ctx.momentum * var * count / (count - 1))
+            running_var.mul_((1 - ctx.momentum))
+            if (count > 1):
+                running_var.add_(ctx.momentum * var * count / (count - 1))
 
             # Mark in-place modified tensors
             ctx.mark_dirty(x, running_mean, running_var)
@@ -181,7 +183,9 @@ class InPlaceABNSync(autograd.Function):
             # Update running stats
             running_mean.mul_((1 - ctx.momentum)).add_(ctx.momentum * mean)
             count = batch_size.item() * x.view(x.shape[0],x.shape[1],-1).shape[-1]
-            running_var.mul_((1 - ctx.momentum)).add_(ctx.momentum * var * (float(count) / (count - 1)))
+            running_var.mul_((1 - ctx.momentum))
+            if (count > 1):
+                running_var.add_(ctx.momentum * var * (float(count) / (count - 1)))
 
             # Mark in-place modified tensors
             ctx.mark_dirty(x, running_mean, running_var)

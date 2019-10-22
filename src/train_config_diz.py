@@ -20,8 +20,8 @@ args = dict(
     display_it=8,
 
     save=True,
-    save_dir=DATASET_DIR + '/class_BiSeNet',
-    resume_path= DATASET_DIR + '/class_BiSeNet/checkpoint.pth', 
+    save_dir=DATASET_DIR + '/class_BiSeNet_rn18',
+    resume_path= DATASET_DIR + '/class_BiSeNet_rn18/checkpoint.pth', 
 
     train_dataset = {
         'name': 'diz_instances',
@@ -44,14 +44,14 @@ args = dict(
                         'keys': ('image', 'instance_map','class_map'),
                     }
                 },
-                {
-                    'name': 'RandomRotation',
-                    'opts': {
-                         'degrees' : 10,   
-                        'keys': ('image', 'instance_map','class_map'),
-                        'resample' : (Image.BILINEAR, Image.NEAREST, Image.NEAREST)
-                    }
-                },
+                # {
+                #     'name': 'RandomRotation',
+                #     'opts': {
+                #          'degrees' : 10,   
+                #         'keys': ('image', 'instance_map','class_map'),
+                #         'resample' : (Image.BILINEAR, Image.NEAREST, Image.NEAREST)
+                #     }
+                # },
                 {
                     'name': 'RandomBrightness',
                     'opts': {
@@ -125,13 +125,13 @@ args = dict(
         'workers': 4
     }, 
     model = {
-        'name': 'branched_erfnet', 
+        'name': 'BiSeNet', 
         'kwargs': {
             'num_classes': [4,9]
         }
     }, 
 
-    lr=3e-5,
+    lr=1e-4,
     n_epochs=500,
 
     # loss options

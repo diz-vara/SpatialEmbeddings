@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 
-from models.resnet import Resnet18
+from models.resnet import resnet18 as Resnet #resnet18, resnet50
 from models.modules.bn import InPlaceABNSync as BatchNorm2d
 
 
@@ -94,7 +94,7 @@ class AttentionRefinementModule(nn.Module):
 class ContextPath(nn.Module):
     def __init__(self, *args, **kwargs):
         super(ContextPath, self).__init__()
-        self.resnet = Resnet18()
+        self.resnet = Resnet()
         self.arm16 = AttentionRefinementModule(256, 128)
         self.arm32 = AttentionRefinementModule(512, 128)
         self.conv_head32 = ConvBNReLU(128, 128, ks=3, stride=1, padding=1)
